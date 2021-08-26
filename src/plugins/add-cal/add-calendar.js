@@ -8,7 +8,7 @@
 "use strict";
 
 /*
- * Variable and function definitions.
+ * Variable and function definition.
  * These are global to the plugin - meaning that they will be initialized once per page,
  * not once per instance of plugin on the page. So, this is a good place to define
  * variables that are common to all instances of the plugin on a page.
