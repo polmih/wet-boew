@@ -43,40 +43,48 @@ var $document = wb.doc,
 				e.preventDefault();
 
 				if ( !$( this ).attr( attrEngaged ) ) {
-					var data = $elm.serializeArray(),
-						$btn = $( "[type=submit][name][" + attrEngaged + "]", $elm ),
-						$selectorSuccess = $( selectorSuccess ),
-						$selectorFailure = $( selectorFailure );
 
-					if ( $btn.length ) {
-						data.push( { name: $btn.attr( "name" ), value: $btn.val() } );
-					}
-					$( this ).attr( attrEngaged, true );
+					// setTimeout to allow wb-frmvld plugin to generate the error section if any
+					setTimeout( function() {
+						var errorSection =  $elm.find( "#errors-" + elm.id );
 
-					// Hide feedback messages
-					$selectorFailure.addClass( classToggle );
-					$selectorSuccess.addClass( classToggle );
+						if ( !errorSection.length ) {
+							var data = $elm.serializeArray(),
+								$btn = $( "[type=submit][name][" + attrEngaged + "]", $elm ),
+								$selectorSuccess = $( selectorSuccess ),
+								$selectorFailure = $( selectorFailure );
 
-					$.ajax( {
-						type: this.method,
-						url: this.action,
-						data: $.param( data )
-					} )
-						.done( function() {
-							$selectorSuccess.removeClass( classToggle );
-						} )
-						.fail( function() {
-							$selectorFailure.removeClass( classToggle );
-						} )
-						.always( function() {
-
-							// Make the form submittable again if multiple submits are allowed or hide
-							if ( multiple ) {
-								$elm.removeAttr( attrEngaged );
-							} else {
-								$elm.addClass( classToggle );
+							if ( $btn.length ) {
+								data.push( { name: $btn.attr( "name" ), value: $btn.val() } );
 							}
-						} );
+							$( this ).attr( attrEngaged, true );
+
+							// Hide feedback messages
+							$selectorFailure.addClass( classToggle );
+							$selectorSuccess.addClass( classToggle );
+
+							$.ajax( {
+								type: this.method,
+								url: this.action,
+								data: $.param( data )
+							} )
+								.done( function() {
+									$selectorSuccess.removeClass( classToggle );
+								} )
+								.fail( function() {
+									$selectorFailure.removeClass( classToggle );
+								} )
+								.always( function() {
+
+									// Make the form submittable again if multiple submits are allowed or hide
+									if ( multiple ) {
+										$elm.removeAttr( attrEngaged );
+									} else {
+										$elm.addClass( classToggle );
+									}
+								} );
+						}
+					}, 200 );
 				}
 			} );
 
