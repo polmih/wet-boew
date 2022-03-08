@@ -1254,6 +1254,7 @@ wb.escapeAttribute = function( str ) {
 * Find most common Personal Identifiable Information (PII) in a string and return either the cleaned string either true/false
 * @param {string} str
 * @param {boolean} toClean
+* @param {boolean} bMarker
 * @return {string | true | false}
 * @example
 * wb.findPotentialPII( "email:test@test.com, phone:123 123 1234", true )
@@ -1261,26 +1262,26 @@ wb.escapeAttribute = function( str ) {
 * wb.findPotentialPII( "email:test@test.com, phone:123 123 1234", false )
 * returns true
 */
-wb.findPotentialPII = function( str, toClean ) {
+wb.findPotentialPII = function( str, toClean, bMarker ) {
 
 	if ( typeof str  !== "string" ) {
 		return false;
 	}
 	var regEx = [
-			/\d(?:[\s\-\\.\\/]?\d){7,}(?!\d)/ig, //8digits or more pattern
-			/\b\w{2}[\s\\.-]*?\d{6}\b/ig, //canadian nr passport pattern
-			/\b(?:[a-zA-Z0-9_\-\\.]+)(?:@|%40)(?:[a-zA-Z0-9_\-\\.]+)\.(?:[a-zA-Z]{2,5})\b/ig, //email pattern
-			/\b[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d\b/ig, //postal code pattern
-			/\b(?:(username|user)[:=][a-zA-Z0-9_\-\\.]+)\b/ig,
-			/\b(?:(password|pass)[:=][^\s#&]+)\b/ig
+			[ /\d(?:[\s\-\\.\\/]?\d){7,}(?!\d)/ig, "#### ####" ], //8digits or more pattern
+			[ /\b[A-Za-z]{2}[\s\\.-]*?\d{6}\b/ig, "## ######" ], //canadian nr passport pattern
+			[ /\b(?:[a-zA-Z0-9_\-\\.]+)(?:@|%40)(?:[a-zA-Z0-9_\-\\.]+)\.(?:[a-zA-Z]{2,5})\b/ig, "###@###.##" ], //email pattern
+			[ /\b[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d\b/ig, "### ###" ], //postal code pattern
+			[ /\b(?:(username|user)[:=][a-zA-Z0-9_\-\\.]+)\b/ig, "#### = ####" ],
+			[ /\b(?:(password|pass)[:=][^\s#&]+)\b/ig, "#### = ####" ]
 		],
 		isFound = false;
 
-	for ( var key in regEx ) {
-		if ( str.match( regEx[ key ] ) ) {
+	for ( var arr in regEx ) {
+		if ( str.match( regEx[ arr ][ 0 ] ) ) {
 			isFound = true;
 			if ( toClean ) {
-				str = str.replaceAll( regEx[ key ], "" );
+				str = str.replaceAll( regEx[ arr ] [ 0 ], ( bMarker === true ? regEx[ arr ][ 1 ] : "" ) );
 			}
 		}
 	}
