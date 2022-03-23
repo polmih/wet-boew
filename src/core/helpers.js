@@ -1267,7 +1267,7 @@ wb.findPotentialPII = function( str, toClean ) {
 		return false;
 	}
 	var regEx = [
-			/\d(?:[\s\-\\.\\/]?\d){7,}(?!\d)/ig, //8digits or more pattern
+			/\d(?:[\s\-\\.\\/]?\d){8,}(?!\d)/ig, //8digits or more pattern
 			/\b[A-Za-z]{2}[\s\\.-]*?\d{6}\b/ig, //canadian nr passport pattern
 			/\b(?:[a-zA-Z0-9_\-\\.]+)(?:@|%40)(?:[a-zA-Z0-9_\-\\.]+)\.(?:[a-zA-Z]{2,5})\b/ig, //email pattern
 			/\b[A-Za-z]\d[A-Za-z][ -]?\d[A-Za-z]\d\b/ig, //postal code pattern
