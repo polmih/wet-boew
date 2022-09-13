@@ -680,19 +680,36 @@ $document.on( initializedEvent, selector, function( event ) {
 
 			// finally lets load safely
 			return Modernizr.load( {
-				load: "https://www.youtube.com/iframe_api"
+				load: "https://www.youtube.com/iframe_api",
+
+				//possible solution for multimedia and doaction conflict in corporate network
+				complete: function() {
+					var resources = window.performance.getEntriesByType( "resource" );
+
+					/* get all the iframe initiators that have the same YT url id */
+					var arrIframesYt  = resources.filter( function( obj ) {
+						return obj.initiatorType === "iframe" && obj.name.includes( data.youTubeId );
+					} );
+
+					/* if none found, most probably wb is loaded in restricted network so wb.ready() is triggered for not preventing other wb components to load*/
+					if ( arrIframesYt.length < 1 ) {
+						if ( !wb.isReady ) {
+							wb.ready( $this, componentName );
+						}
+					}
+				}
 			} );
 
 		} else if ( media.error === null && media.currentSrc !== "" && media.currentSrc !== undef ) {
 			$this.trigger( renderUIEvent, [ type, data ] );
+
+			// Identify that initialization has completed
+			wb.ready( $this, componentName );
 		} else {
 
 			// Do nothing since IE8 support is no longer required
 			return;
 		}
-
-		// Identify that initialization has completed
-		wb.ready( $this, componentName );
 	}
 } );
 
@@ -721,6 +738,9 @@ $document.on( youtubeEvent, selector, function( event, data ) {
 				onReady: function( event ) {
 					onResize();
 					youTubeEvents( event );
+					if ( !wb.isReady ) {
+						wb.ready( $this, componentName );
+					}
 				},
 				onStateChange: youTubeEvents,
 				onApiChange: function() {
@@ -728,6 +748,9 @@ $document.on( youtubeEvent, selector, function( event, data ) {
 					//If captions were enabled before the module was ready, re-enable them
 					var t = $this.get( 0 );
 					t.player( "setCaptionsVisible", t.player( "getCaptionsVisible" ) );
+				},
+				onError: function() {
+					console.warn( "There is an issue loading the Youtube player" );
 				}
 			}
 		} );
