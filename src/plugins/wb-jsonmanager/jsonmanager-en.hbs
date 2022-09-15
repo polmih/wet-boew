@@ -54,6 +54,32 @@
 	</ul>
 </div>
 
+<div data-wb-jsonmanager='{
+		"name": "noUrl",
+		"srcSelector": [
+					{ "forInput": true },
+					{ "selector": "page", "propKey": "externalReferer" },
+					{ "selector": "title", "propKey": "pageTitle" },
+					{ "selector": "page", "propKey": "submissionPage" },
+					{ "selector": "html", "propKey": "lang", "attrName": "lang" }
+					],
+		"debug": true
+	}'>
+	<p>Patch an array of object:</p>
+	<div data-wb-json='{
+			"url": "#[noUrl]",
+			"mapping": [
+				{ "selector": "input", "attr":"name" "value": "/name" },
+				{ "selector": "input", "attr":"value" "value": "/value" }
+			]
+		}'>
+		<template>
+			<input type="hidden" name="" value="">
+		</template>
+	</div>
+	<p data-json-replace="#[noUrl]/pageTitle">default</p>
+</div>
+
 <details>
 	<summary>View source code</summary>
 

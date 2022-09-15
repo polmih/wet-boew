@@ -180,6 +180,29 @@ var componentName = "wb-jsonmanager",
 		opsRoot: [],
 		settings: { }
 	},
+	jsonSource = {},
+	tag = 0,
+	findValues = ( arr ) => {
+		if ( arr[ 0 ].forInput && arr[ 0 ].forInput === true ) {
+			tag = 1;
+		}
+		for ( tag; tag <= arr.length - 1; tag++ ) {
+
+
+			if ( arr[ tag ].selector !== "page" ) {
+				var targetTag = document.querySelector( "" + arr[ tag ].selector );
+
+				if ( arr[ tag ].attrName ) {
+					jsonSource[ arr[ tag ].propKey ] = targetTag.getAttribute( arr [ tag ].attrName ) || "";
+				} else {
+					jsonSource[ arr[ tag ].propKey ] = targetTag.textContent || "";
+				}
+
+			} else {
+				jsonSource[ arr[ tag ].propKey ] = arr[ tag ].propKey === "externalReferer" ? document.referrer : location.href;
+			}
+		}
+	},
 
 	// Add debug information after the JSON manager element
 	debugPrintOut = function( $elm, name, json, patches ) {
@@ -200,7 +223,7 @@ var componentName = "wb-jsonmanager",
 			jsSettings = window[ componentName ] || { },
 			ops, opsArray, opsRoot,
 			i, i_len, i_cache,
-			url, dsName;
+			url, dsName, srcSelector;
 
 		if ( elm ) {
 			$elm = $( elm );
@@ -273,11 +296,81 @@ var componentName = "wb-jsonmanager",
 						}
 					} else {
 
-						// Do an empty fetch to ensure jsonPointer is loaded and correctly initialized
-						$elm.trigger( {
-							type: "json-fetch.wb"
-						} );
-						wb.ready( $elm, componentName );
+						if ( elmData.srcSelector && Array.isArray( elmData.srcSelector ) ) {
+							srcSelector = elmData.srcSelector;
+
+
+							findValues( srcSelector );
+
+							var settings = wb.getData( $elm, componentName );
+							console.log( "processing..." );
+
+							dsName = "[" + settings.name + "]";
+
+							datasetCache [ "[noUrl]" ] = jsonSource;
+							var dsJSON = jsonSource;
+
+							var delayedLst = dsDelayed[ dsName ] || [];
+							console.log( delayedLst );
+							console.log( dsDelayed );
+							i_len = delayedLst.length;
+							for ( i = 0; i !== i_len; i += 1 ) {
+								i_cache = delayedLst[ i ];
+								var pntrSelector = i_cache.selector;
+								var resultSet = {};
+								if ( pntrSelector.length ) {
+									try {
+										resultSet = jsonpointer.get( dsJSON, pntrSelector );
+									} catch  ( e ) {
+										throw dsName + " - JSON selector not found: " + pntrSelector;
+									}
+								} else {
+									resultSet = dsJSON;
+								}
+								$( "#" + i_cache.callerId ).trigger( {
+									type: "json-fetched.wb",
+									fetch: {
+										response: resultSet,
+										status: "200",
+										refId: i_cache.refId,
+										xhr: null
+									}
+								}, this );
+							}
+
+							$elm.trigger( {
+								type: "json-fetch.wb"
+							} );
+
+
+							wb.ready( $elm, componentName );
+
+							// $elm.trigger( {
+							// 	type: patchesEvent,
+							// 	patches: []
+							// } );
+
+							/*
+							$( "#" + callerId ).trigger( {
+								type: "json-fetched.wb",
+								fetch: {
+									response: jsonSource,
+									status: "200",
+									xhr: {},
+									refId: refId
+								}
+							}, this );
+							*/
+
+						} else {
+
+							// Do an empty fetch to ensure jsonPointer is loaded and correctly initialized
+
+							$elm.trigger( {
+								type: "json-fetch.wb"
+							} );
+							wb.ready( $elm, componentName );
+						}
 					}
 				}
 			} );
@@ -458,13 +551,11 @@ $document.on( "json-fetched.wb", selector, function( event ) {
 		$elm = $( elm ),
 		settings,
 		dsName,
-		JSONresponse = event.fetch.response,
+		JSONresponse = event.fetch.response || jsonSource,
 		isArrayResponse = $.isArray( JSONresponse ),
 		resultSet,
 		i, i_len, i_cache, backlog, selector,
 		patches, filterTrueness, filterFaslseness, filterPath;
-
-
 	if ( elm === event.currentTarget ) {
 
 		settings = wb.getData( $elm, componentName );
@@ -552,6 +643,8 @@ $document.on( "json-fetched.wb", selector, function( event ) {
 
 // Apply patches to a preloaded JSON data
 $document.on( patchesEvent, selector, function( event ) {
+	console.log( patchesEvent );
+	console.log( event );
 	var elm = event.target,
 		$elm = $( elm ),
 		patches = event.patches,
@@ -567,7 +660,7 @@ $document.on( patchesEvent, selector, function( event ) {
 
 	if ( elm === event.currentTarget && $.isArray( patches ) ) {
 		settings = wb.getData( $elm, componentName );
-
+		console.log( "processing..." );
 		if ( !settings ) {
 			return true;
 		}
@@ -587,6 +680,7 @@ $document.on( patchesEvent, selector, function( event ) {
 		if ( !isCumulative ) {
 			dsJSON = $.extend( true, ( $.isArray( dsJSON ) ? [] : {} ), dsJSON );
 		}
+		console.log( datasetCache );
 
 		// Apply a filtering
 		if ( filterPath ) {
@@ -599,7 +693,10 @@ $document.on( patchesEvent, selector, function( event ) {
 			debugPrintOut( $elm, "patchesEvent", dsJSON, patches );
 		}
 
+		console.log( dsJSON );
 		delayedLst = dsDelayed[ dsName ];
+		console.log( delayedLst );
+
 		i_len = delayedLst.length;
 		for ( i = 0; i !== i_len; i += 1 ) {
 			i_cache = delayedLst[ i ];
