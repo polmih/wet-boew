@@ -180,6 +180,38 @@ var componentName = "wb-jsonmanager",
 		opsRoot: [],
 		settings: { }
 	},
+	jsonSource = {},
+	docMapKeys = { "externalReferer": document.referrer, "submissionPage": location.href },
+	findValues = ( elmData ) => {
+		if ( elmData.mapAsArray ) {
+			jsonSource[ elmData.name ] = [];
+		}
+		for ( var tag = 0; tag <= elmData.srcExtractor.length - 1; tag++ ) {
+
+			var targetTag = document.querySelector( "" + elmData.srcExtractor[ tag ].selector );
+			if ( elmData.mapAsArray ) {
+				jsonSource[ elmData.name ].push( {
+					name: elmData.srcExtractor[ tag ].path,
+					value: elmData.srcExtractor[ tag ].attr ? targetTag.getAttribute( elmData.srcExtractor [ tag ].attr ) : targetTag.textContent || ""
+				} );
+			} else {
+				jsonSource [ elmData.srcExtractor[ tag ].path ] =  elmData.srcExtractor[ tag ].attr ? targetTag.getAttribute( elmData.srcExtractor [ tag ].attr ) : targetTag.textContent || "";
+			}
+		}
+		if ( Array.isArray( elmData.docExtractor ) ) {
+			for ( var i in elmData.docExtractor ) {
+
+				if ( elmData.mapAsArray ) {
+					jsonSource[ elmData.name ].push( {
+						name: elmData.docExtractor[ i ],
+						value: docMapKeys[ elmData.docExtractor[ i ] ] || ""
+					} );
+				} else {
+					jsonSource[ elmData.docExtractor[ i ] ] = docMapKeys[ elmData.docExtractor[ i ] ];
+				}
+			}
+		}
+	},
 
 	// Add debug information after the JSON manager element
 	debugPrintOut = function( $elm, name, json, patches ) {
@@ -211,7 +243,7 @@ var componentName = "wb-jsonmanager",
 				// For loading multiple dependencies
 				load: "site!deps/json-patch" + wb.getMode() + ".js",
 				testReady: function() {
-					return window.jsonpatch;
+					return window.jsonpatch && window.jsonpointer;
 				},
 				complete: function() {
 					var elmData = wb.getData( $elm, componentName );
@@ -273,11 +305,59 @@ var componentName = "wb-jsonmanager",
 						}
 					} else {
 
-						// Do an empty fetch to ensure jsonPointer is loaded and correctly initialized
-						$elm.trigger( {
-							type: "json-fetch.wb"
-						} );
-						wb.ready( $elm, componentName );
+						if ( elmData.srcExtractor && Array.isArray( elmData.srcExtractor ) ) {
+
+							findValues( elmData );
+
+							var settings = wb.getData( $elm, componentName );
+							console.log( "processing..." );
+
+							dsName = "[" + settings.name + "]";
+
+							datasetCache [ "[noUrl]" ] = elmData.mapAsArray ? jsonSource[ elmData.name ] : jsonSource;
+							var dsJSON = elmData.mapAsArray ? jsonSource[ elmData.name ] : jsonSource;
+
+							var delayedLst = dsDelayed[ dsName ] || [];
+							i_len = delayedLst.length;
+							for ( i = 0; i !== i_len; i += 1 ) {
+								i_cache = delayedLst[ i ];
+								var pntrSelector = i_cache.selector;
+								var resultSet = {};
+								if ( pntrSelector.length ) {
+									try {
+										resultSet = jsonpointer.get( dsJSON, pntrSelector );
+									} catch  ( e ) {
+										throw dsName + " - JSON selector not found: " + pntrSelector;
+									}
+								} else {
+									resultSet = dsJSON;
+								}
+								$( "#" + i_cache.callerId ).trigger( {
+									type: "json-fetched.wb",
+									fetch: {
+										response: resultSet,
+										status: "200",
+										refId: i_cache.refId,
+										xhr: null
+									}
+								}, this );
+							}
+
+							$elm.trigger( {
+								type: "json-fetch.wb"
+							} );
+
+							wb.ready( $elm, componentName );
+
+						} else {
+
+							// Do an empty fetch to ensure jsonPointer is loaded and correctly initialized
+
+							$elm.trigger( {
+								type: "json-fetch.wb"
+							} );
+							wb.ready( $elm, componentName );
+						}
 					}
 				}
 			} );
@@ -458,13 +538,11 @@ $document.on( "json-fetched.wb", selector, function( event ) {
 		$elm = $( elm ),
 		settings,
 		dsName,
-		JSONresponse = event.fetch.response,
+		JSONresponse = event.fetch.response || jsonSource,
 		isArrayResponse = $.isArray( JSONresponse ),
 		resultSet,
 		i, i_len, i_cache, backlog, selector,
 		patches, filterTrueness, filterFaslseness, filterPath;
-
-
 	if ( elm === event.currentTarget ) {
 
 		settings = wb.getData( $elm, componentName );
@@ -552,6 +630,8 @@ $document.on( "json-fetched.wb", selector, function( event ) {
 
 // Apply patches to a preloaded JSON data
 $document.on( patchesEvent, selector, function( event ) {
+	console.log( patchesEvent );
+	console.log( event );
 	var elm = event.target,
 		$elm = $( elm ),
 		patches = event.patches,
@@ -567,7 +647,7 @@ $document.on( patchesEvent, selector, function( event ) {
 
 	if ( elm === event.currentTarget && $.isArray( patches ) ) {
 		settings = wb.getData( $elm, componentName );
-
+		console.log( "processing..." );
 		if ( !settings ) {
 			return true;
 		}
@@ -587,6 +667,7 @@ $document.on( patchesEvent, selector, function( event ) {
 		if ( !isCumulative ) {
 			dsJSON = $.extend( true, ( $.isArray( dsJSON ) ? [] : {} ), dsJSON );
 		}
+		console.log( datasetCache );
 
 		// Apply a filtering
 		if ( filterPath ) {
@@ -599,7 +680,10 @@ $document.on( patchesEvent, selector, function( event ) {
 			debugPrintOut( $elm, "patchesEvent", dsJSON, patches );
 		}
 
+		console.log( dsJSON );
 		delayedLst = dsDelayed[ dsName ];
+		console.log( delayedLst );
+
 		i_len = delayedLst.length;
 		for ( i = 0; i !== i_len; i += 1 ) {
 			i_cache = delayedLst[ i ];

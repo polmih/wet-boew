@@ -310,3 +310,80 @@
 	&quot;debug&quot;: true
 }'&gt;Number of products: &lt;span data-json-replace=&quot;#[example3]/nbproduct&quot;&gt;Not available&lt;/span&gt;&lt;/p&gt;</code></pre>
 </details>
+
+<h2>Applying patch by using CSS selectors to collect the data from the document and to build the data source JSON object</h2>
+<p>Patch an array of object:</p>
+
+<div data-wb-jsonmanager='{
+		"name": "noUrl",
+		"srcExtractor": [
+					{ "selector": "title", "path": "pageTitle" },
+					{ "selector": "html", "path": "lang", "attr": "lang" }
+					],
+		"mapAsArray": true,
+		"docExtractor": [ "submissionPage", "externalReferer" ]
+	}'>
+	<div data-wb-json='{
+			"url": "#[noUrl]",
+			"mapping": [
+				{ "selector": "input", "attr":"name", "value": "/name" },
+				{ "selector": "input", "attr":"value", "value": "/value" }
+			]
+		}'>
+		<template>
+			<input type="text" name="" value="">
+		</template>
+	</div>
+</div>
+
+<details>
+	<summary>View source code</summary>
+
+	<h3>HTML</h3>
+	<pre><code>&lt;div data-wb-jsonmanager='{
+		&quot;name&quot;: &quot;noUrl&quot;,
+		&quot;srcExtractor&quot;: [
+			{ &quot;selector&quot;: &quot;title&quot;, &quot;path&quot;: &quot;pageTitle&quot; },
+			{ &quot;selector&quot;: &quot;html&quot;, &quot;path&quot;: &quot;lang&quot;, &quot;attr&quot;: &quot;lang&quot;}
+		],
+		&quot;mapAsArray&quot;: &quot;true&quot;,
+		&quot;docExtractor&quot;: [ &quot;submissionPage&quot;, &quot;externalReferer&quot; ]
+	}'&gt;
+
+	&lt;div data-wb-json='{
+			&quot;url&quot;: &quot;#[noUrl]&quot;,
+			&quot;mapping&quot;: [
+				{ &quot;selector&quot;: &quot;input&quot;, &quot;attr&quot;: &quot;name&quot;, &quot;value&quot;: &quot;/name&quot; },
+				{ &quot;selector&quot;: &quot;input&quot;, &quot;attr&quot;: &quot;name&quot;, &quot;value&quot;: &quot;/value&quot; }
+			]
+		}'&gt;
+		&lt;template&gt;
+			&lt;input type=&quot;text&quot; name=&quot;&quot; value=&quot;&quot; &gt;
+		&lt;/template&gt;
+	&lt;/div&gt;
+&lt;/div&gt;</code></pre>
+</details>
+
+
+<p>Patch by replacing some content:</p>
+
+<div data-wb-jsonmanager='{
+		"name": "noUrl2",
+		"srcExtractor": [ { "selector": "title", "path": "pageTitle" } ]
+		}'>
+		<p data-json-replace="#[noUrl2]/pageTitle">default</p>
+</div>
+
+<details>
+	<summary>View source code</summary>
+
+	<h3>HTML</h3>
+	<pre><code>&lt;div data-wb-jsonmanager='{
+		&quot;name&quot;: &quot;noUrl2&quot;,
+		&quot;srcExtractor&quot;: [
+			{ &quot;selector&quot;: &quot;title&quot;, &quot;path&quot;: &quot;pageTitle&quot; }
+			]
+	}'&gt;
+	&lt;p data-json-replace='{ &quot;#[noUrl2]/pageTitle&quot; }' &gt;default&lt;/p&gt;</code></pre>
+</details>
+

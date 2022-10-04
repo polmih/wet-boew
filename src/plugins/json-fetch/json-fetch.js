@@ -109,6 +109,9 @@ $document.on( fetchEvent, function( event ) {
 
 		Modernizr.load( {
 			load: "site!deps/jsonpointer" + wb.getMode() + ".js",
+			testReady: function() {
+				return window.jsonpointer;
+			},
 			complete: function() {
 
 				// Ensure this fetch has an URL. There is no URL when only using dataset name (a virtual JSON file).
